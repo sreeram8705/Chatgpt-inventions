@@ -7,10 +7,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
-    <link rel="apple-touch-icon" href="icon.png"> <title>HabitFlow</title>
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <title>HabitFlow</title>
     <style>
         :root {
-            --bg-color: #000000;
+            --bg-color: #050505;
             --card-bg: #121212;
             --text-main: #ffffff;
             --text-muted: #888888;
@@ -23,12 +25,12 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 30px 20px; /* Adjusted padding for mobile screens */
+            padding: 30px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
             -webkit-font-smoothing: antialiased;
-            -webkit-tap-highlight-color: transparent; /* Removes iOS grey tap highlight */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container { width: 100%; max-width: 850px; }
@@ -44,7 +46,7 @@
         }
         .progress-svg {
             width: 100%; height: 100%;
-            transform: rotate(-90deg); /* Starts the line at 12 o'clock */
+            transform: rotate(-90deg);
         }
         .progress-track {
             fill: none;
@@ -56,8 +58,8 @@
             stroke: var(--accent);
             stroke-width: 6;
             stroke-linecap: round;
-            stroke-dasharray: 220; /* Circumference of the circle */
-            stroke-dashoffset: 220; /* Starts empty */
+            stroke-dasharray: 220;
+            stroke-dashoffset: 220;
             transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .progress-inner {
@@ -74,7 +76,6 @@
             margin-bottom: 24px;
         }
 
-        /* Adjusted form for mobile wrapping */
         .form-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; align-items: flex-end; }
         .input-group { display: flex; flex-direction: column; gap: 8px; flex-grow: 1; min-width: 80px; }
         .input-group.full-width { min-width: 100%; }
@@ -86,7 +87,7 @@
             border: none;
             padding: 14px 16px;
             border-radius: 14px; 
-            font-weight: 600; font-size: 16px; /* 16px prevents iOS auto-zoom on input */
+            font-weight: 600; font-size: 16px;
             outline: none; transition: all 0.3s ease;
             -webkit-appearance: none;
         }
@@ -98,7 +99,15 @@
             padding: 14px 24px; border-radius: 14px; border: 1px solid #333333;
             font-size: 14px; height: 48px; flex-grow: 1;
         }
-        .btn-add:active { background-color: #333; transform: scale(0.96); } /* Mobile tap feedback */
+        .btn-add:active { background-color: #333; transform: scale(0.96); }
+
+        .btn-sync {
+            width: 100%; margin-top: 20px; background-color: #1a1a1a; 
+            color: var(--text-muted); border: 1px dashed #333333; 
+            padding: 14px; border-radius: 14px; font-size: 11px; 
+            font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-sync:active { background-color: #222; transform: scale(0.98); }
 
         .habit-item {
             display: flex; justify-content: space-between; align-items: center;
@@ -108,7 +117,7 @@
         .habit-item:last-child { border-bottom: none; padding-bottom: 0; }
 
         .habit-info { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
-        .bell-icon { font-size: 20px; background: none; padding: 10px; margin-left: -10px; } /* Larger touch target */
+        .bell-icon { font-size: 20px; background: none; padding: 10px; margin-left: -10px; }
         .bell-on { color: var(--accent); }
         .bell-off { color: #333333; }
         .habit-name { font-weight: 600; font-size: 16px; letter-spacing: -0.3px;}
@@ -117,7 +126,6 @@
         .streaks-wrapper {
             display: flex; gap: 16px; overflow-x: auto; padding-bottom: 5px;
             justify-content: flex-end; align-items: center;
-            /* Smooth momentum scrolling for iOS */
             -webkit-overflow-scrolling: touch; 
         }
         .streaks-wrapper::-webkit-scrollbar { display: none; }
@@ -126,9 +134,8 @@
         .day-label { font-size: 10px; color: var(--text-muted); text-align: center; line-height: 1.4; font-weight: 600;}
         .day-num { font-size: 14px; color: var(--text-main); font-weight: 700;}
         
-        /* Smooth Animated Dots */
         .fire-btn { 
-            width: 36px; height: 36px; /* Large touch target for iOS */
+            width: 36px; height: 36px;
             display: flex; align-items: center; justify-content: center;
             background: none; padding: 0; outline: none; 
         }
@@ -139,11 +146,10 @@
             background-color: transparent;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        /* When tapped/lit */
         .fire-btn.fire-lit .dot {
             background-color: var(--accent);
             border-color: var(--accent);
-            transform: scale(1.4); /* Smoothly pops outward */
+            transform: scale(1.4); 
         }
         
     </style>
@@ -188,6 +194,10 @@
             </div>
             <button class="btn-add" onclick="addHabit()">ADD</button>
         </div>
+        
+        <button class="btn-sync" onclick="syncToCalendar()">
+            📅 Sync Reminders to iPhone Calendar
+        </button>
     </div>
 
     <h3 style="margin-top: 30px; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; color: var(--text-muted); text-transform: uppercase;">Tracking</h3>
@@ -196,6 +206,7 @@
 
 <script>
     let habits = JSON.parse(localStorage.getItem('habits')) || {};
+    let notifiedToday = new Set();
 
     function getLocalDateStr(date) {
         const y = date.getFullYear();
@@ -247,7 +258,6 @@
         const progressLine = document.getElementById('progress-line');
         const progressText = document.getElementById('progress-text');
         
-        // 220 is the circumference of the SVG circle (2 * pi * radius 35)
         const circumference = 220; 
 
         if (habitKeys.length === 0) {
@@ -266,7 +276,6 @@
         
         progressText.innerText = `${displayPct}%`;
         
-        // Calculate how much to offset the stroke based on percentage
         const offset = circumference - (pct * circumference);
         progressLine.style.strokeDashoffset = offset;
     }
@@ -314,7 +323,6 @@
                 const isLit = data.history ? data.history[dateStr] : false; 
                 const fireClass = isLit ? 'fire-lit' : 'fire-dim';
 
-                // Notice the inner <div class="dot"></div> for smooth scaling!
                 streaksHTML += `
                     <div class="day-col">
                         <span class="day-label">
@@ -335,6 +343,80 @@
         document.querySelectorAll('.streaks-wrapper').forEach(el => el.scrollLeft = el.scrollWidth);
     }
 
+    function syncToCalendar() {
+        let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//HabitFlow//EN\n";
+        
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+
+        for (const [name, data] of Object.entries(habits)) {
+            if (!data.notify) continue;
+
+            const targetTime = data.notifyTime || data.startTime;
+            const [hours, minutes] = targetTime.split(':');
+            
+            const dtStart = `${year}${month}${day}T${hours}${minutes}00`;
+            
+            icsContent += "BEGIN:VEVENT\n";
+            icsContent += `UID:${name.replace(/\s+/g, '')}@habitflow\n`;
+            icsContent += `DTSTAMP:${dtStart}Z\n`;
+            icsContent += `DTSTART;TZID=LocalTime:${dtStart}\n`;
+            icsContent += "RRULE:FREQ=DAILY\n"; 
+            icsContent += `SUMMARY:HabitFlow: ${name}\n`;
+            icsContent += `DESCRIPTION:Time to start your habit: ${name}\n`;
+            
+            icsContent += "BEGIN:VALARM\n";
+            icsContent += "TRIGGER:-PT0M\n"; 
+            icsContent += "ACTION:DISPLAY\n";
+            icsContent += `DESCRIPTION:Reminder for ${name}\n`;
+            icsContent += "END:VALARM\n";
+            
+            icsContent += "END:VEVENT\n";
+        }
+        
+        icsContent += "END:VCALENDAR";
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.setAttribute('download', 'habitflow_reminders.ics');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Retained for desktop/active window alerts
+    setInterval(() => {
+        if (Notification.permission !== "granted") return;
+        
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        const dateStr = getLocalDateStr(now);
+
+        if (dateStr !== getLocalDateStr(new Date(Date.now() - 60000))) {
+            renderHabits(); 
+            updateProgress();
+        }
+        
+        for (const [name, data] of Object.entries(habits)) {
+            const notifyKey = `${name}_${dateStr}`;
+            const targetTime = data.notifyTime || data.startTime;
+
+            if (data.notify && targetTime === currentTime && !notifiedToday.has(notifyKey)) {
+                new Notification("HabitFlow Reminder", {
+                    body: `Upcoming: ${name} starts at ${data.startTime}`
+                });
+                notifiedToday.add(notifyKey);
+            }
+        }
+    }, 30000); 
+
+    if (Notification.permission !== "granted" && window.Notification) {
+        Notification.requestPermission();
+    }
+    
     renderHabits();
     updateProgress();
 </script>
